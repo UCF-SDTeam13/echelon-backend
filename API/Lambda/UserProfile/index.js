@@ -1,7 +1,5 @@
 /**
  * @fileOverview Lambda to handle API requests regarding user profile data
- * @author Terrell Ibanez
- * @author Lili Lin
  */
 
 const dotenv = require('dotenv');
@@ -23,9 +21,10 @@ function getUserProfile(userID, dbconnection, callback) {
     return;
   }
   // Find user and send to callback
-  dbconnection.query('SELECT * FROM UserProfile WHERE userID = ?', userID, (error, results) => {
+  dbconnection.query('SELECT * FROM UserProfile WHERE userID = ?;', userID, (error, results) => {
     if (error) {
       callback(error);
+      return;
     }
     if (results.length === 1) {
       callback(null, results[0]);
@@ -33,6 +32,43 @@ function getUserProfile(userID, dbconnection, callback) {
       callback(new Error('Error: Invalid userID'));
     }
   });
+}
+
+/**
+ * Set user profile fields
+ * @param {string} userID userID of user profile to get
+ * @param {Object} dbconnection MySQL connection to database
+ * @param {function} callback handler callback function
+ */
+function setUserProfile(userID, bodyjson, dbconnection, callback) {
+  // Check for userID
+  if (userID == null) {
+    callback(new Error('Error: Missing userID'));
+    return;
+  }
+  // Check userID is valid first
+  dbconnection.query('SELECT * FROM UserProfile WHERE userID = ?;', userID, (error, results) => {
+    if (error) {
+      callback(error);
+      return;
+    }
+    if (results.length !== 1) {
+      callback(new Error('Error: Invalid userID'));
+    }
+  });
+  // Check for all parameters and update
+  if (bodyjson.firstName && bodyjson.lastName && bodyjson.email) {
+    dbconnection.query('UPDATE UserProfile SET firstName = ?, lastName = ?, email = ? WHERE userID = ?;',
+      [bodyjson.firstName, bodyjson.lastName, bodyjson.email, userID], (error) => {
+        if (error) {
+          callback(error);
+        } else {
+          callback(null, 'Success');
+        }
+      });
+  } else {
+    callback(new Error('Error: Missing parameters'));
+  }
 }
 
 exports.handler = (event, context, callback) => {
@@ -55,7 +91,10 @@ exports.handler = (event, context, callback) => {
     case 'GET':
       getUserProfile(event.params.querystring.userID, dbconnection, callback);
       break;
-
+    case 'PUT':
+      setUserProfile(event.params.querystring.userID, event['body-json'],
+        dbconnection, callback);
+      break;
     default:
       callback(new Error('Error: Unsupported Method'));
       break;
