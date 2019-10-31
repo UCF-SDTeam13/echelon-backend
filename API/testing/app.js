@@ -11,8 +11,26 @@ let response;
 const gamelift = new AWS.GameLift();
 
 async function createGameSession(gameParams) {
-  const gameSessionPromise = gamelift.createGameSession(gameParams).promise();
-  return (await gameSessionPromise).GameSession;
+  const paramsSearch = {
+    FleetId: process.env.FLEETID,
+  };
+  let gameSession;
+  // Get Existing Game Sessions
+  const sessionPromise = gamelift.searchGameSessions(paramsSearch).promise();
+  const sessions = (await sessionPromise).GameSessions;
+  console.log(sessions);
+  // If Game Sessions Already Exist - Use The First Available
+  if (sessions.length >= 1) {
+    // Equivalent to gameSession = sessions[0];
+    [gameSession] = sessions;
+  } else {
+    // Otherwise - Create a New Game Session
+    const gameSessionPromise = gamelift.createGameSession(gameParams).promise();
+    // Because AWS
+    gameSession = (await gameSessionPromise).GameSession;
+  }
+
+  return gameSession;
 }
 
 async function createPlayerSession(playerParams) {
