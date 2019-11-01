@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "amazon-cognito-identity-js": "^3.0.15",
+    "aws-sdk": "^2.560.0",
     "dotenv": "^8.1.0",
     "node-fetch": "^2.6.0",
     "uuid": "^3.3.3"
