@@ -55,15 +55,20 @@ async function authenticate(username, password) {
 // Create User and Return User Promise
 async function createUser(username, password, email) {
   const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+  // List of User Attributes
   const attributeList = [];
 
+  // Prepare Data for Email Attribute
   const dataEmail = {
     Name: 'email',
     Value: email,
   };
 
+  // Convert Email Data to CognitoUserAttribute
   const attributeEmail = new AmazonCognitoIdentity.CognitoUserAttribute(dataEmail);
 
+  // Add Email Attribute to Attribute List
   attributeList.push(attributeEmail);
 
   // NOTE: userPool.signUp DOES NOT work with promisify - Uses Custom Promise Instead
