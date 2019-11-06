@@ -46,6 +46,42 @@ Resources:
           Properties:
             Path: /test/player/session
             Method: post
+  MatchmakingTopic:
+    Type: AWS::SNS::Topic
+  MatchmakingTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: 
+        - !Ref MatchmakingTopic
+      PolicyDocument:
+        Version: '2008-10-17'
+        Statement:
+        - Sid: OwnerPolicy
+          Effect: Allow
+          Principal:
+            AWS: "*"
+          Action:
+          - SNS:GetTopicAttributes
+          - SNS:SetTopicAttributes
+          - SNS:AddPermission
+          - SNS:RemovePermission
+          - SNS:DeleteTopic
+          - SNS:Subscribe
+          - SNS:ListSubscriptionsByTopic
+          - SNS:Publish
+          - SNS:Receive
+          Resource: !Ref MatchmakingTopic
+          Condition:
+            StringEquals:
+              AWS:SourceOwner: !Ref "AWS::AccountId"
+        - Sid: MatchmakingGameLiftPolicy
+          Effect: Allow
+          Principal:
+            Service: gamelift.amazonaws.com
+          Action: SNS:Publish
+          Resource: !Ref MatchmakingTopic
+      
+  #    TopicName: "EchelonMatchmakingTopic"
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
