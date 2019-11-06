@@ -9,8 +9,66 @@ Description: >
 Globals:
   Function:
     Timeout: 3
-
 Resources:
+  APITestingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com" 
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+      - 
+        PolicyName: "APIGameLiftTesting"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          -
+            Sid: GameLiftFullAccess
+            Effect: Allow
+            Action: "gamelift:*"
+            Resource: "*"
+  APIMatchmakingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com" 
+            Action: 
+              - "sts:AssumeRole"
+      Policies:
+      - 
+        PolicyName: "APIGameLiftMatchmaking"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          -
+            Sid: GameLiftFullAccess
+            Effect: Allow
+            Action:
+            - gamelift:StartMatchmaking
+            - gamelift:StopMatchmaking
+            - gamelift:DescribeMatchMaking
+            - gamelift:AcceptMatch
+            Resource: "*"
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   AuthenticationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -34,6 +92,7 @@ Resources:
       CodeUri: API/testing/
       Handler: app.lambdaHandler
       Runtime: nodejs10.x
+      Role: !GetAtt APITestingRole.Arn
       Events:
         TestGameSession:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -55,7 +114,8 @@ Resources:
       PolicyDocument:
         Version: '2008-10-17'
         Statement:
-        - Sid: OwnerPolicy
+        -
+          Sid: OwnerPolicy
           Effect: Allow
           Principal:
             AWS: "*"
@@ -73,14 +133,10 @@ Resources:
           Condition:
             StringEquals:
               AWS:SourceOwner: !Ref "AWS::AccountId"
-        - Sid: MatchmakingGameLiftPolicy
+        -
+          Sid: MatchmakingGameLiftPolicy
           Effect: Allow
           Principal:
             Service: gamelift.amazonaws.com
           Action: SNS:Publish
           Resource: !Ref MatchmakingTopic
-      
-  #    TopicName: "EchelonMatchmakingTopic"
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
