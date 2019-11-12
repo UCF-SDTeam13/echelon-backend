@@ -10,6 +10,21 @@ Globals:
   Function:
     Timeout: 3
 Resources:
+  GameLiftServerInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "gamelift.amazonaws.com" 
+            Action: 
+              - "sts:AssumeRole"
   APITestingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -58,7 +73,7 @@ Resources:
           Version: '2012-10-17'
           Statement:
           -
-            Sid: GameLiftFullAccess
+            Sid: GameLiftLimitedAccess
             Effect: Allow
             Action:
             - gamelift:StartMatchmaking
@@ -87,6 +102,34 @@ Resources:
           Properties:
             Path: /auth/user
             Method: post
+  MatchmakingFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: API/matchmaking/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Role: !GetAtt APITestingRole.Arn
+      Events:
+        StartMatchmaking:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /matchmaking/ticket/
+            Method: post
+        DescribeMatchmaking:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /matchmaking/status/
+            Method: post
+        AcceptMatch:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /matchmaking/match/
+            Method: post
+        StopMatchmaking:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /matchmaking/ticket/
+            Method: delete
   TestingFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -105,6 +148,27 @@ Resources:
           Properties:
             Path: /test/player/session
             Method: post
+        TestQueueSession:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /test/gamequeue/session
+            Method: post
+        TestQueueSessionStatus:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /test/gamequeue/session/status
+            Method: post
+  LoggingFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: GameLift/logging/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Events:
+        LogEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref MatchmakingTopic
   MatchmakingTopic:
     Type: AWS::SNS::Topic
   MatchmakingTopicPolicy:

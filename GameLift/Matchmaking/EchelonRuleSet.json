@@ -1,0 +1,59 @@
+{
+    "name": "EchelonRule",
+    "ruleLanguageVersion": "1.0",
+    "teams": [
+        {
+            "name": "Echelon",
+            "maxPlayers": 8,
+            "minPlayers": 7
+        }
+    ],
+    "rules": [
+        {
+            "name": "LowLatency",
+            "description": "Allows matches to be made based on latency",
+            "type": "latency",
+            "maxLatency": 100
+        }
+    ],
+    "expansions": [
+        {
+            "target": "rules[LowLatency].maxLatency",
+            "steps": [
+                {
+                    "waitTimeSeconds": 10,
+                    "value": 150
+                },
+                {
+                    "waitTimeSeconds": 25,
+                    "value": 200
+                }
+            ]
+        },
+        {
+            "target": "teams[Echelon].minPlayers",
+            "steps": [
+                {
+                    "waitTimeSeconds": 20,
+                    "value": 6
+                },
+                {
+                    "waitTimeSeconds": 30,
+                    "value": 5
+                },
+                {
+                    "waitTimeSeconds": 40,
+                    "value": 4
+                },
+                {
+                    "waitTimeSeconds": 50,
+                    "value": 3
+                },
+                {
+                    "waitTimeSeconds": 60,
+                    "value": 2
+                }
+            ]
+        }
+    ]
+}
