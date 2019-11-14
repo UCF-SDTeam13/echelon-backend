@@ -5,7 +5,7 @@
     "teams": [{
         "name": "Echelon",
         "maxPlayers": 8,
-        "minPlayers": 2
+        "minPlayers": 8
     }],
     "rules": [{
         "name": "LowLatency",
