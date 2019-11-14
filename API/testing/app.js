@@ -6,13 +6,12 @@ const AWS = require('aws-sdk');
 
 const uuid = require('uuid');
 
-// HTTP Response
-let response;
 const gamelift = new AWS.GameLift();
 
 async function createGameSession(gameParams) {
   const paramsSearch = {
-    FleetId: process.env.FLEETID,
+    // FleetId: process.env.FLEETID,
+    AliasId: process.env.ALIASID,
   };
   let gameSession;
   // Get Existing Game Sessions
@@ -40,6 +39,25 @@ async function createPlayerSession(playerParams) {
   }).promise();
   return (await playerSessionPromise).PlayerSession;
 }
+
+async function startGameSessionPlacement() {
+  const sessionParams = {
+    GameSessionQueueName: 'echelonAliasQueue',
+    MaximumPlayerSessionCount: 8,
+    PlacementId: uuid.v4(),
+  };
+
+  const placementPromise = gamelift.startGameSessionPlacement(sessionParams).promise();
+  const placement = (await placementPromise).GameSessionPlacement;
+  return placement;
+}
+
+async function describeGameSessionPlacement(sessionParams) {
+  const placementPromise = gamelift.describeGameSessionPlacement(sessionParams).promise();
+  const placement = (await placementPromise).GameSessionPlacement;
+  return placement;
+}
+
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -53,18 +71,19 @@ async function createPlayerSession(playerParams) {
  *
  */
 exports.lambdaHandler = async (event, context) => {
+  // HTTP Response
+  let response;
   const gameParams = {
     MaximumPlayerSessionCount: '8', /* required */
-    // AliasId: 'STRING_VALUE',
+    AliasId: process.env.ALIASID,
     // CreatorId: 'STRING_VALUE',
-    FleetId: process.env.FLEETID,
-    GameProperties: [
-      {
-        Key: 'test', /* required */
-        Value: 'STRING_VALUE', /* required */
-      },
-      /* more items */
-    ],
+    // FleetId: process.env.FLEETID,
+    // GameProperties: [
+    //  {
+    //    Key: 'test', /* required */
+    //    Value: 'STRING_VALUE', /* required */
+    //  },
+    // ],
     // GameSessionData: 'STRING_VALUE',
     // GameSessionId: 'STRING_VALUE',
     // IdempotencyToken: 'STRING_VALUE',
@@ -79,6 +98,7 @@ exports.lambdaHandler = async (event, context) => {
     let gameSession;
     let playerSession;
     let playerParams;
+    let placementParams;
     switch (event.resource) {
       // Test Game Session POST - Create Game Session
       case '/test/game/session':
@@ -98,13 +118,71 @@ exports.lambdaHandler = async (event, context) => {
             CreationTime: gameSession.CreationTime,
             CurrentPlayerSessionCount: gameSession.CurrentPlayerSessionCount,
             MaximumPlayerSessionCount: gameSession.MaximumPlayerSessionCount,
-            Status: gameSession.Status.toString(),
+            Status: gameSession.Status,
             IpAddress: gameSession.IpAddress.toString(),
             Port: gameSession.Port.toString(),
             PlayerSessionCreationPolicy: gameSession.PlayerSessionCreationPolicy,
           }),
         };
+        break;
+      case '/test/gamequeue/session':
+        console.log('Placing GameLift Session');
 
+        gameSession = await startGameSessionPlacement();
+        console.log(gameSession);
+
+        // Respond with HTTP 200 OK and Token
+        console.log('200 OK');
+        response = {
+          statusCode: 200,
+          body: JSON.stringify({
+            message: 'Session Placement Queued Successful',
+            PlacementId: gameSession.PlacementId,
+            GameSessionQueueName: gameSession.GameSessionQueueName,
+            MaximumPlayerSessionCount: gameSession.MaximumPlayerSessionCount,
+            GameSessionName: gameSession.GameSessionName,
+            GameSessionArn: gameSession.GameSessionArn,
+            Status: gameSession.Status,
+            // IpAddress: gameSession.IpAddress.toString(),
+            // Port: gameSession.Port.toString(),
+            GameSessionData: gameSession.GameSessionData,
+          }),
+        };
+        break;
+      case '/test/gamequeue/session/status':
+        if (event.body) {
+          placementParams = JSON.parse(event.body);
+          console.log('Getting Status of GameLift Placement');
+
+          gameSession = await describeGameSessionPlacement(placementParams);
+          console.log(gameSession);
+
+          // Respond with HTTP 200 OK and Token
+          console.log('200 OK');
+          response = {
+            statusCode: 200,
+            body: JSON.stringify({
+              message: 'Session Placement Queued Successful',
+              PlacementId: gameSession.PlacementId,
+              GameSessionQueueName: gameSession.GameSessionQueueName,
+              MaximumPlayerSessionCount: gameSession.MaximumPlayerSessionCount,
+              GameSessionName: gameSession.GameSessionName,
+              GameSessionArn: gameSession.GameSessionArn,
+              Status: gameSession.Status,
+              // IpAddress: gameSession.IpAddress.toString(),
+              // Port: gameSession.Port.toString(),
+              GameSessionData: gameSession.GameSessionData,
+            }),
+          };
+        } else {
+          console.log('400 Bad Request - Body Missing');
+          response = {
+            statusCode: 400,
+            body: JSON.stringify({
+              message: 'Bad Request',
+            }),
+          };
+        }
         break;
       // Test Player Session POST - Create Player Session in Game Session
       case '/test/player/session':
@@ -137,7 +215,6 @@ exports.lambdaHandler = async (event, context) => {
         }
 
         break;
-
       default:
         // Unknown Resource
         console.log(`Unknown Resource: ${event.resource}`);

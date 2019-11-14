@@ -132,4 +132,6 @@ credentials
 .aws-sam
 packaged.yaml
 
+#Ignore Zip Builds
+*.zip
 # End of https://www.gitignore.io/api/osx,node,linux,windows

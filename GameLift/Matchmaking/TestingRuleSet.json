@@ -1,0 +1,34 @@
+{
+    "name": "EchelonRule",
+    "ruleLanguageVersion": "1.0",
+    "teams": [
+        {
+            "name": "Echelon",
+            "maxPlayers": 1,
+            "minPlayers": 1
+        }
+    ],
+    "rules": [
+        {
+            "name": "LowLatency",
+            "description": "Allows matches to be made based on latency",
+            "type": "latency",
+            "maxLatency": 100
+        }
+    ],
+    "expansions": [
+        {
+            "target": "rules[LowLatency].maxLatency",
+            "steps": [
+                {
+                    "waitTimeSeconds": 10,
+                    "value": 150
+                },
+                {
+                    "waitTimeSeconds": 25,
+                    "value": 200
+                }
+            ]
+        }
+    ]
+}
