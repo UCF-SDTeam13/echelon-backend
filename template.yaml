@@ -81,7 +81,18 @@ Resources:
             - gamelift:DescribeMatchMaking
             - gamelift:AcceptMatch
             Resource: "*"
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  EchelonBackendApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: "'*'"
+      Auth:
+        DefaultAuthorizer: EchelonCognitoAuthorizer
+        Authorizers:
+          EchelonCognitoAuthorizer:
+            UserPoolArn: "arn:aws:cognito-idp:us-east-1:208447551786:userpool/us-east-1_IwgYhHBvJ"
+  # While we define the API Itself, the Resources Are Still Implicit
+  # ServerlessRestApi is no longer an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   AuthenticationFunction:
@@ -97,11 +108,17 @@ Resources:
           Properties:
             Path: /auth/login
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: NONE
         CreateUser:
           Type: Api
           Properties:
             Path: /auth/user
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
   MatchmakingFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -115,21 +132,33 @@ Resources:
           Properties:
             Path: /matchmaking/ticket/
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         DescribeMatchmaking:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /matchmaking/status/
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         AcceptMatch:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /matchmaking/match/
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         StopMatchmaking:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /matchmaking/ticket/
             Method: delete
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
   TestingFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -143,21 +172,33 @@ Resources:
           Properties:
             Path: /test/game/session
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         TestPlayerSession:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /test/player/session
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         TestQueueSession:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /test/gamequeue/session
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
         TestQueueSessionStatus:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /test/gamequeue/session/status
             Method: post
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
   LoggingFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
