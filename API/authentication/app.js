@@ -9,6 +9,8 @@ const dotenv = require('dotenv');
 // Environment Variable Import
 dotenv.config({ path: '.env' });
 
+const mysql = require('mysql2/promise');
+
 // HTTP Response
 let response;
 
@@ -53,7 +55,7 @@ async function authenticate(username, password) {
 }
 
 // Create User and Return User Promise
-async function createUser(username, password, email) {
+async function createUser(username, password, email, dbconnection) {
   const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
   // List of User Attributes
@@ -83,6 +85,8 @@ async function createUser(username, password, email) {
       });
     },
   );
+
+  await dbconnection.execute('INSERT INTO UserProfile VALUES (?, ?, TRUE, 0);', [username, email]);
   return signupPromise(username, password, attributeList);
 }
 /**
@@ -98,6 +102,22 @@ async function createUser(username, password, email) {
  *
  */
 exports.lambdaHandler = async (event, context) => {
+  // Set database connection parameters, pulling credentials from env
+  const dbconnection = await mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_DB,
+  });
+  // Connect to database
+  /*
+  dbconnection.connect((err) => {
+    if (err) {
+      callback(err);
+    }
+  });
+  */
   try {
     // Log Event
     console.log(event);
@@ -142,7 +162,9 @@ exports.lambdaHandler = async (event, context) => {
           // Parse, and Wait for User Creation
           const params = JSON.parse(event.body);
           console.log('Creating User');
-          const cognitoUser = await createUser(params.username, params.password, params.email);
+          const cognitoUser = await createUser(
+            params.username, params.password, params.email, dbconnection,
+          );
           // Respond with HTTP 201 Created
           response = {
             statusCode: 201,
