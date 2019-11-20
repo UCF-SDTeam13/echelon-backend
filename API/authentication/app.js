@@ -141,7 +141,12 @@ exports.lambdaHandler = async (event, context) => {
             statusCode: 200,
             body: JSON.stringify({
               message: 'Authentication Successful',
-              token: cognitoToken,
+              idToken: cognitoToken.idToken.jwtToken,
+              refreshToken: cognitoToken.refreshToken.token,
+              accessToken: cognitoToken.accessToken.jwtToken,
+              username: cognitoToken.idToken.payload['cognito:username'],
+              iat: `${cognitoToken.idToken.payload.iat}`,
+              exp: `${cognitoToken.idToken.payload.exp}`,
             }),
           };
         } else {
@@ -171,7 +176,7 @@ exports.lambdaHandler = async (event, context) => {
             statusCode: 201,
             body: JSON.stringify({
               message: 'User Created',
-              user: cognitoUser,
+              username: cognitoUser.username,
             }),
           };
         } else {
