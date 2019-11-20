@@ -4,8 +4,6 @@ dotenv.config({ path: '.env' });
 
 const AWS = require('aws-sdk');
 
-const uuid = require('uuid');
-
 const gamelift = new AWS.GameLift();
 
 async function startMatchmaking(playerParams) {

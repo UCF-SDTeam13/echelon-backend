@@ -8,7 +8,7 @@ const mysql = require('mysql2/promise');
 let response;
 
 async function getProfile(dbconnection, username) {
-  const [rows, fields] = await dbconnection.execute('SELECT * FROM UserProfile WHERE userID=?;', [username]);
+  const [rows, fields] = await dbconnection.execute('SELECT * FROM UserProfile WHERE userId=?;', [username]);
   console.log(fields);
   if (rows.length === 1) {
     return rows[0];
@@ -17,7 +17,7 @@ async function getProfile(dbconnection, username) {
 }
 
 async function getCustomization(dbconnection, username) {
-  const [rows, fields] = await dbconnection.execute('SELECT * FROM Customization WHERE userID=?;', [username]);
+  const [rows, fields] = await dbconnection.execute('SELECT * FROM Customization WHERE userId=?;', [username]);
   console.log(fields);
   if (rows.length === 1) {
     return rows[0];
@@ -26,8 +26,8 @@ async function getCustomization(dbconnection, username) {
 }
 
 async function setCustomization(dbconnection, username, customizationParams) {
-  await dbconnection.execute('UPDATE Customization SET characterModelID=? WHERE userID=?;', [customizationParams.characterModelID, username]);
-  const [rows, fields] = await dbconnection.execute('SELECT * FROM Customization WHERE userID=?;', [username]);
+  await dbconnection.execute('UPDATE Customization SET characterModelId=? WHERE userId=?;', [customizationParams.characterModelId, username]);
+  const [rows, fields] = await dbconnection.execute('SELECT * FROM Customization WHERE userId=?;', [username]);
   console.log(fields);
   if (rows.length === 1) {
     return rows[0];
