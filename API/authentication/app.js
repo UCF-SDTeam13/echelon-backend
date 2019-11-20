@@ -87,6 +87,7 @@ async function createUser(username, password, email, dbconnection) {
   );
 
   await dbconnection.execute('INSERT INTO UserProfile VALUES (?, ?, TRUE, 0);', [username, email]);
+  await dbconnection.execute('INSERT INTO Customization VALUES (?, ?);', [username, 'N/A']);
   return signupPromise(username, password, attributeList);
 }
 /**

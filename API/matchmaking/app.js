@@ -14,11 +14,12 @@ async function startMatchmaking(playerParams) {
     ConfigurationName: 'EchelonMatchmaker',
     Players: [
       {
-        PlayerId: uuid.v4(),
+        PlayerId: playerParams.PlayerId,
         PlayerAttributes: {
 
         },
         Team: 'Echelon',
+        // TODO - Add Code for Proper Ping
         LatencyInMs: {
           'us-east-1': '1',
           'us-east-2': '1',
@@ -57,7 +58,7 @@ async function acceptMatch(matchParams) {
 async function stopMatchmaking(playerParams) {
   const playerSessionPromise = gamelift.createPlayerSession({
     GameSessionId: playerParams.GameSessionId,
-    PlayerId: uuid.v4(),
+    PlayerId: playerParams.PlayerId,
   }).promise();
   return (await playerSessionPromise).PlayerSession;
 }
@@ -80,6 +81,7 @@ exports.lambdaHandler = async (event, context) => {
   try {
     // Log Event
     console.log(event);
+    console.log(event.requestContext.authorizer.claims);
     // Log Console
     console.log(context);
     let ticket;
@@ -96,6 +98,7 @@ exports.lambdaHandler = async (event, context) => {
             if (event.body) {
               playerParams = JSON.parse(event.body);
               console.log('Starting Matchmaking');
+              playerParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
               ticket = await startMatchmaking(playerParams);
               console.log(ticket);
 
@@ -128,6 +131,7 @@ exports.lambdaHandler = async (event, context) => {
             if (event.body) {
               playerParams = JSON.parse(event.body);
               console.log('Creating Player Session');
+              playerParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
               playerSession = await stopMatchmaking(playerParams);
 
               response = {
@@ -188,6 +192,7 @@ exports.lambdaHandler = async (event, context) => {
         if (event.body) {
           acceptParams = JSON.parse(event.body);
           console.log('Accepting Match');
+          acceptParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
           acceptResponse = await acceptMatch(acceptParams);
           console.log(ticket);
 
