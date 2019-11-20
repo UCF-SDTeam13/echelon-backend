@@ -173,7 +173,13 @@ exports.lambdaHandler = async (event, context) => {
             statusCode: 200,
             body: JSON.stringify({
               message: 'Ticket Status Retrieved',
-              Ticket: ticket,
+              TicketId: ticket.TickedId,
+              Status: ticket.Status,
+              StatusReason: ticket.StatusReason,
+              StatusMessage: ticket.StatusMessage,
+              StartTime: ticket.StartTime,
+              EndTime: ticket.EndTime,
+              PlayerId: ticket.Players[0].PlayerId,
             }),
           };
         } else {
