@@ -79,7 +79,10 @@ exports.lambdaHandler = async (event, context) => {
             statusCode: 200,
             body: JSON.stringify({
               message: 'Profile Found',
-              profile,
+              userId: profile.userId,
+              email: profile.email,
+              subscription: profile.subscription,
+              points: profile.points,
             }),
           };
         } else {
@@ -108,7 +111,8 @@ exports.lambdaHandler = async (event, context) => {
                 statusCode: 200,
                 body: JSON.stringify({
                   message: 'Customization Found',
-                  customization,
+                  userId: customization.userId,
+                  characterModelId: customization.characterModelId,
                 }),
               };
             } else {
@@ -136,7 +140,8 @@ exports.lambdaHandler = async (event, context) => {
                   statusCode: 200,
                   body: JSON.stringify({
                     message: 'Customization Set',
-                    customization,
+                    userId: customization.userId,
+                    characterModelId: customization.characterModelId,
                   }),
                 };
               } else {
