@@ -159,6 +159,37 @@ Resources:
             RestApiId: !Ref EchelonBackendApi
             Auth:
               Authorizer: EchelonCognitoAuthorizer
+  ProfileFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: API/profile/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Events:
+        GetProfile:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /profile/
+            Method: get
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
+        GetCustomization:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /profile/customization/
+            Method: get
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
+        SetCustomization:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /profile/customization/
+            Method: put
+            RestApiId: !Ref EchelonBackendApi
+            Auth:
+              Authorizer: EchelonCognitoAuthorizer
   TestingFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
