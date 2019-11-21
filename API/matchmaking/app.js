@@ -166,22 +166,44 @@ exports.lambdaHandler = async (event, context) => {
           console.log('Describe Matchmaking Ticket');
           ticket = await describeMatchmaking(ticketParams.TicketId);
           console.log(ticket);
-
+          console.log(ticket.GameSessionConnectionInfo.MatchedPlayerSessions);
           // Respond with HTTP 200 OK and Token
           console.log('200 OK');
-          response = {
-            statusCode: 200,
-            body: JSON.stringify({
-              message: 'Ticket Status Retrieved',
-              TicketId: ticket.TickedId,
-              Status: ticket.Status,
-              StatusReason: ticket.StatusReason,
-              StatusMessage: ticket.StatusMessage,
-              StartTime: ticket.StartTime,
-              EndTime: ticket.EndTime,
-              PlayerId: ticket.Players[0].PlayerId,
-            }),
-          };
+          if (ticket.Status === 'COMPLETED') {
+            response = {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Ticket Status Retrieved',
+                TicketId: ticket.TickedId,
+                Status: ticket.Status,
+                StatusReason: ticket.StatusReason,
+                StatusMessage: ticket.StatusMessage,
+                StartTime: ticket.StartTime,
+                EndTime: ticket.EndTime,
+                PlayerId: ticket.Players[0].PlayerId,
+                GameSessionArn: ticket.GameSessionConnectionInfo.GameSessionArn,
+                IpAddress: ticket.GameSessionConnectionInfo.IpAddress,
+                DnsName: ticket.GameSessionConnectionInfo.DnsName,
+                Port: `${ticket.GameSessionConnectionInfo.Port}`,
+                PlayerSessionId:
+                  ticket.GameSessionConnectionInfo.MatchedPlayerSessions[0].PlayerSessionId,
+              }),
+            };
+          } else {
+            response = {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Ticket Status Retrieved',
+                TicketId: ticket.TickedId,
+                Status: ticket.Status,
+                StatusReason: ticket.StatusReason,
+                StatusMessage: ticket.StatusMessage,
+                StartTime: ticket.StartTime,
+                EndTime: ticket.EndTime,
+                PlayerId: ticket.Players[0].PlayerId,
+              }),
+            };
+          }
         } else {
           console.log('400 Bad Request - Body Missing');
           response = {
