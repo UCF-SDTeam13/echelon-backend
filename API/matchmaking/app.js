@@ -166,10 +166,10 @@ exports.lambdaHandler = async (event, context) => {
           console.log('Describe Matchmaking Ticket');
           ticket = await describeMatchmaking(ticketParams.TicketId);
           console.log(ticket);
-          console.log(ticket.GameSessionConnectionInfo.MatchedPlayerSessions);
           // Respond with HTTP 200 OK and Token
           console.log('200 OK');
           if (ticket.Status === 'COMPLETED') {
+            console.log(ticket.GameSessionConnectionInfo.MatchedPlayerSessions);
             response = {
               statusCode: 200,
               body: JSON.stringify({
