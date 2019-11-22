@@ -4,8 +4,6 @@ dotenv.config({ path: '.env' });
 
 const AWS = require('aws-sdk');
 
-const uuid = require('uuid');
-
 const gamelift = new AWS.GameLift();
 
 async function startMatchmaking(playerParams) {
@@ -14,11 +12,12 @@ async function startMatchmaking(playerParams) {
     ConfigurationName: 'EchelonMatchmaker',
     Players: [
       {
-        PlayerId: uuid.v4(),
+        PlayerId: playerParams.PlayerId,
         PlayerAttributes: {
 
         },
         Team: 'Echelon',
+        // TODO - Add Code for Proper Ping
         LatencyInMs: {
           'us-east-1': '1',
           'us-east-2': '1',
@@ -57,7 +56,7 @@ async function acceptMatch(matchParams) {
 async function stopMatchmaking(playerParams) {
   const playerSessionPromise = gamelift.createPlayerSession({
     GameSessionId: playerParams.GameSessionId,
-    PlayerId: uuid.v4(),
+    PlayerId: playerParams.PlayerId,
   }).promise();
   return (await playerSessionPromise).PlayerSession;
 }
@@ -80,6 +79,7 @@ exports.lambdaHandler = async (event, context) => {
   try {
     // Log Event
     console.log(event);
+    console.log(event.requestContext.authorizer.claims);
     // Log Console
     console.log(context);
     let ticket;
@@ -96,6 +96,7 @@ exports.lambdaHandler = async (event, context) => {
             if (event.body) {
               playerParams = JSON.parse(event.body);
               console.log('Starting Matchmaking');
+              playerParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
               ticket = await startMatchmaking(playerParams);
               console.log(ticket);
 
@@ -128,6 +129,7 @@ exports.lambdaHandler = async (event, context) => {
             if (event.body) {
               playerParams = JSON.parse(event.body);
               console.log('Creating Player Session');
+              playerParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
               playerSession = await stopMatchmaking(playerParams);
 
               response = {
@@ -164,16 +166,44 @@ exports.lambdaHandler = async (event, context) => {
           console.log('Describe Matchmaking Ticket');
           ticket = await describeMatchmaking(ticketParams.TicketId);
           console.log(ticket);
-
           // Respond with HTTP 200 OK and Token
           console.log('200 OK');
-          response = {
-            statusCode: 200,
-            body: JSON.stringify({
-              message: 'Ticket Status Retrieved',
-              Ticket: ticket,
-            }),
-          };
+          if (ticket.Status === 'COMPLETED') {
+            console.log(ticket.GameSessionConnectionInfo.MatchedPlayerSessions);
+            response = {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Ticket Status Retrieved',
+                TicketId: ticket.TickedId,
+                Status: ticket.Status,
+                StatusReason: ticket.StatusReason,
+                StatusMessage: ticket.StatusMessage,
+                StartTime: ticket.StartTime,
+                EndTime: ticket.EndTime,
+                PlayerId: ticket.Players[0].PlayerId,
+                GameSessionArn: ticket.GameSessionConnectionInfo.GameSessionArn,
+                IpAddress: ticket.GameSessionConnectionInfo.IpAddress,
+                DnsName: ticket.GameSessionConnectionInfo.DnsName,
+                Port: `${ticket.GameSessionConnectionInfo.Port}`,
+                PlayerSessionId:
+                  ticket.GameSessionConnectionInfo.MatchedPlayerSessions[0].PlayerSessionId,
+              }),
+            };
+          } else {
+            response = {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Ticket Status Retrieved',
+                TicketId: ticket.TickedId,
+                Status: ticket.Status,
+                StatusReason: ticket.StatusReason,
+                StatusMessage: ticket.StatusMessage,
+                StartTime: ticket.StartTime,
+                EndTime: ticket.EndTime,
+                PlayerId: ticket.Players[0].PlayerId,
+              }),
+            };
+          }
         } else {
           console.log('400 Bad Request - Body Missing');
           response = {
@@ -188,6 +218,7 @@ exports.lambdaHandler = async (event, context) => {
         if (event.body) {
           acceptParams = JSON.parse(event.body);
           console.log('Accepting Match');
+          acceptParams.PlayerId = event.requestContext.authorizer.claims['cognito:username'];
           acceptResponse = await acceptMatch(acceptParams);
           console.log(ticket);
 
