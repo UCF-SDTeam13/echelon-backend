@@ -1,7 +1,15 @@
 {
     "name": "EchelonRule",
     "ruleLanguageVersion": "1.0",
-
+    "playerAttributes": [{
+        "name": "time",
+        "type": "number",
+        "default": 15
+    },{
+        "name": "mapPreference",
+        "type": "string",
+        "default": "EchelonDomeTrack" 
+    }],
     "teams": [{
         "name": "Echelon",
         "maxPlayers": 8,

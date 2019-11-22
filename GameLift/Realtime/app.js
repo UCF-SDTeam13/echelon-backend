@@ -20,7 +20,7 @@ const OP_CODE_RACE_START = 115;
 const OP_CODE_RACE_END = 116;
 const OP_CODE_TIME_TILL_TERMINATE = 117;
 const OP_CODE_STATS_UPDATE = 118;
-
+const OP_CODE_CUSTOMIZATION_UPDATE = 119;
 
 // Called when game server is initialized, passed server's object of current session
 function init(rtSession) {
@@ -85,8 +85,8 @@ function onPlayerAccepted(player) {
 }
 
 // On Player Disconnect is called when a player has left or been forcibly terminated
-// Is only called for players that actually connected to the server and not those rejected by validation
-// This is called before the player is removed from the player list
+// Is only called for players that actually connected to the server and not those rejected by
+// validation. This is called before the player is removed from the player list
 function onPlayerDisconnect(peerId) {
   logger.info(`Player ${peerId} disconnected`);
 
@@ -96,7 +96,7 @@ function onPlayerDisconnect(peerId) {
     `Player ${peerId} disconnected`);
   session.getPlayers().forEach((player, playerId) => {
     if (playerId !== peerId) {
-      session.sendReliableMessage(outMessage, peerId);
+      session.sendReliableMessage(outMessage, playerId);
     }
   });
   activePlayers -= 1;
@@ -105,6 +105,17 @@ function onPlayerDisconnect(peerId) {
 // Handle a message to the server
 function onMessage(gameMessage) {
   switch (gameMessage.opCode) {
+    case OP_CODE_RACE_START:
+    {
+      const outMessage = session.newTextGameMessage(OP_CODE_RACE_START, session.getServerId(), 'Race Starting');
+      // eslint-disable-next-line no-unused-vars
+      session.getPlayers().forEach((player, playerId) => {
+        session.sendReliableMessage(outMessage, playerId);
+      });
+      logger.info('Starting Game Session');
+      break;
+    }
+
     case OP_CODE_TIME_TILL_TERMINATE:
     {
       // Adding a minute for termination time to allow players to leave.
@@ -115,8 +126,20 @@ function onMessage(gameMessage) {
 
     case OP_CODE_STATS_UPDATE:
     {
-      const outMessage = session.newTextGameMessage(OP_CODE_STATS_UPDATE, session.getServerId(),
-        gameMessage.payload);
+      const outMessage = session.newTextGameMessage(OP_CODE_STATS_UPDATE,
+        gameMessage.sender, gameMessage.payload);
+      session.getPlayers().forEach((player, playerId) => {
+        if (playerId !== gameMessage.sender) {
+          session.sendReliableMessage(outMessage, playerId);
+        }
+      });
+      break;
+    }
+
+    case OP_CODE_CUSTOMIZATION_UPDATE:
+    {
+      const outMessage = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
+        gameMessage.sender, gameMessage.payload);
       session.getPlayers().forEach((player, playerId) => {
         if (playerId !== gameMessage.sender) {
           session.sendReliableMessage(outMessage, playerId);
@@ -166,12 +189,6 @@ async function tickLoop() {
 function onStartGameSession(gameSession) {
   logger.info(`GameSession Information: ${gameSession}`);
   // Complete any game session set-up
-  const outMessage = session.newTextGameMessage(OP_CODE_RACE_START, session.getServerId(), 'Race Starting');
-  // eslint-disable-next-line no-unused-vars
-  session.getPlayers().forEach((player, playerId) => {
-    session.sendReliableMessage(outMessage, player);
-  });
-  logger.info('Starting Game Session');
 
   // Set up an example tick loop to perform server initiated actions
   startTime = getTimeInS();
