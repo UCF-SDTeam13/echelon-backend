@@ -35,6 +35,43 @@ async function setCustomization(dbconnection, username, customizationParams) {
   return null;
 }
 
+async function getAchievements(dbconnection, username) {
+  const [rows, fields] = await dbconnection.execute('SELECT * FROM UserAchievements WHERE userId=?;', [username]);
+  console.log(fields);
+  const achievements = {
+    userId: username,
+    ids: [],
+    times: [],
+  };
+  rows.forEach((element) => {
+    achievements.ids.push(element.achievementId);
+    achievements.times.push(element.achievedTime);
+  });
+  return achievements;
+}
+
+async function setAchievement(dbconnection, username, achievementParams) {
+  if (typeof achievementParams.achievedTime === 'string') {
+    // eslint-disable-next-line no-param-reassign
+    achievementParams.achievedTime = parseInt(achievementParams.achievedTime, 10);
+  }
+
+  const [rows, fields] = await dbconnection.execute('SELECT * FROM UserAchievements WHERE userId=?;', [username]);
+  console.log(fields);
+  if (rows.length === 1) {
+    // Update Existing Row
+    await dbconnection.execute('UPDATE UserAchievements SET achievedTime=? WHERE userId=? AND achievementId=?;', [achievementParams.achievedTime, username, achievementParams.achievementId]);
+  } else {
+    // Insert
+    await dbconnection.execute('INSERT INTO UserAchievements VALUES(?, ?, ?)', [username, achievementParams.achievementId, achievementParams.achievedTime]);
+  }
+  const [rows2, fields2] = await dbconnection.execute('SELECT * FROM UserAchievements WHERE userId=? AND achievementId=?;', [username, achievementParams.achievementId]);
+  console.log(fields2);
+  if (rows2.length === 1) {
+    return rows2[0];
+  }
+  return null;
+}
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -51,7 +88,9 @@ exports.lambdaHandler = async (event, context) => {
   let profile;
   let customization;
   let customizationParams;
-
+  let achievement;
+  let achievements;
+  let achievementParams;
   // Set database connection parameters, pulling credentials from env
   const dbconnection = await mysql.createConnection({
     host: process.env.DB_HOST,
@@ -97,9 +136,10 @@ exports.lambdaHandler = async (event, context) => {
           };
         }
         break;
-      // GET Profile Customization
+      // Customization API
       case '/profile/customization':
         switch (event.httpMethod) {
+          // GET Profile Customization
           case 'GET':
             console.log('Getting Customization');
             customization = await getCustomization(dbconnection, event.requestContext.authorizer.claims['cognito:username']);
@@ -127,6 +167,7 @@ exports.lambdaHandler = async (event, context) => {
               };
             }
             break;
+          // Set Profile Customization
           case 'PUT':
             if (event.body) {
               customizationParams = JSON.parse(event.body);
@@ -152,6 +193,83 @@ exports.lambdaHandler = async (event, context) => {
                   statusCode: 404,
                   body: JSON.stringify({
                     message: 'Customization Not Found',
+                  }),
+                };
+              }
+            } else {
+              console.log('400 Bad Request - Body Missing');
+              response = {
+                statusCode: 400,
+                body: JSON.stringify({
+                  message: 'Bad Request',
+                }),
+              };
+            }
+            break;
+          default:
+            console.log(`Unknown Method  ${event.httpMethod}`);
+            break;
+        }
+        break;
+      // Achievements API
+      case '/profile/achievement':
+        switch (event.httpMethod) {
+          // GET Profile Achievements
+          case 'GET':
+            console.log('Getting Achievements');
+            achievements = await getAchievements(dbconnection, event.requestContext.authorizer.claims['cognito:username']);
+            if (achievements != null) {
+              console.log('Customization Found');
+              // Respond with HTTP 200 OK and Token
+              console.log('200 OK');
+              response = {
+                statusCode: 200,
+                body: JSON.stringify({
+                  message: 'Achievements Found',
+                  userId: achievements.userId,
+                  achievementIds: achievements.ids,
+                  achievementTimes: achievements.times,
+                }),
+              };
+            } else {
+              console.log('Achievements Not Found');
+              // Respond with HTTP 200 OK and Token
+              console.log('404 NOT FOUND');
+              response = {
+                statusCode: 404,
+                body: JSON.stringify({
+                  message: 'Achievements Not Found',
+                }),
+              };
+            }
+            break;
+          // Set Profile Achievement
+          case 'PUT':
+            if (event.body) {
+              achievementParams = JSON.parse(event.body);
+              console.log('Setting Achievement');
+              achievement = await setAchievement(dbconnection, event.requestContext.authorizer.claims['cognito:username'], achievementParams);
+              if (achievement != null) {
+                console.log('Customization Set');
+                // Respond with HTTP 200 OK and Token
+                console.log('200 OK');
+                response = {
+                  statusCode: 200,
+                  body: JSON.stringify({
+                    message: 'Achievement Set',
+                    userId: achievement.userId,
+                    achievementId: achievement.achievementId,
+                    achievedTime: achievement.achievedTime,
+                  }),
+                };
+              } else {
+                console.log('Achievement Not Found');
+                // Respond with HTTP 200 OK and Token
+                console.log('404 NOT FOUND');
+                response = {
+                  statusCode: 404,
+                  body: JSON.stringify({
+                    message: 'Achievement Not Found',
                   }),
                 };
               }
