@@ -5,12 +5,11 @@ const tickTime = 1000;
 // Defines how to long to wait in seconds before beginning
 // early termination check in the example tick loop
 const minimumElapsedTime = 30;
-
 let session; // The Realtime server session object
 let logger; // Log at appropriate level via .info(), .warn(), .error(), .debug()
 let startTime; // Records the time the process started
 let activePlayers = 0; // Records the number of connected players
-let timeTillTerminate;
+let timeTillTerminate = 0;
 let log = [];
 
 // Example custom op codes for user-defined messages
@@ -85,7 +84,7 @@ function onPlayerAccepted(player) {
   log.forEach(element => {
 	let customizationLog = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
 	  element.peerId, element.customizationModel);
-	session.sendReliableMessage(customizationLog, playerId);
+	session.sendReliableMessage(customizationLog, player.peerId);
 	});
 
   session.sendReliableMessage(msg, player.peerId);
@@ -128,7 +127,7 @@ function onMessage(gameMessage) {
     {
       // Adding a minute for termination time to allow players to leave.
       // If 15 min game, then 16 mins till server terminates
-      timeTillTerminate = (gameMessage.payload + 1) * 1000 * 60;
+      timeTillTerminate = (gameMessage.payload + 3) * 1000 * 60;
       break;
     }
 
