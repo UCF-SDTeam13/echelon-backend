@@ -4,13 +4,13 @@ const tickTime = 1000;
 
 // Defines how to long to wait in seconds before beginning
 // early termination check in the example tick loop
-const minimumElapsedTime = 120;
-
+const minimumElapsedTime = 30;
 let session; // The Realtime server session object
 let logger; // Log at appropriate level via .info(), .warn(), .error(), .debug()
 let startTime; // Records the time the process started
 let activePlayers = 0; // Records the number of connected players
-let timeTillTerminate;
+let timeTillTerminate = 0;
+let log = [];
 
 // Example custom op codes for user-defined messages
 // Any positive op code number can be defined here. These should match your client code.
@@ -21,6 +21,7 @@ const OP_CODE_RACE_END = 116;
 const OP_CODE_TIME_TILL_TERMINATE = 117;
 const OP_CODE_STATS_UPDATE = 118;
 const OP_CODE_CUSTOMIZATION_UPDATE = 119;
+const OP_CODE_PLAYERS_CONNECTED = 120;
 
 // Called when game server is initialized, passed server's object of current session
 function init(rtSession) {
@@ -79,6 +80,12 @@ function onPlayerAccepted(player) {
   // This player was accepted -- let's send them a message
   const msg = session.newTextGameMessage(OP_CODE_PLAYER_ACCEPTED, player.peerId,
     `Player ${player.peerId} accepted`);
+	
+  log.forEach(element => {
+	let customizationLog = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
+	  element.peerId, element.customizationModel);
+	session.sendReliableMessage(customizationLog, player.peerId);
+	});
 
   session.sendReliableMessage(msg, player.peerId);
   activePlayers += 1;
@@ -92,8 +99,8 @@ function onPlayerDisconnect(peerId) {
 
   // send a message to each remaining player letting them know about the disconnect
   const outMessage = session.newTextGameMessage(OP_CODE_PLAYER_DISCONNECTED,
-    session.getServerId(),
-    `Player ${peerId} disconnected`);
+	peerId,`Player ${peerId} disconnected`);
+	
   session.getPlayers().forEach((player, playerId) => {
     if (playerId !== peerId) {
       session.sendReliableMessage(outMessage, playerId);
@@ -112,7 +119,7 @@ function onMessage(gameMessage) {
       session.getPlayers().forEach((player, playerId) => {
         session.sendReliableMessage(outMessage, playerId);
       });
-      logger.info('Starting Game Session');
+      logger.info('Starting Game');
       break;
     }
 
@@ -120,7 +127,7 @@ function onMessage(gameMessage) {
     {
       // Adding a minute for termination time to allow players to leave.
       // If 15 min game, then 16 mins till server terminates
-      timeTillTerminate = (gameMessage.payload + 1) * 1000 * 60;
+      timeTillTerminate = (gameMessage.payload + 3) * 1000 * 60;
       break;
     }
 
@@ -135,7 +142,7 @@ function onMessage(gameMessage) {
       });
       break;
     }
-
+	
     case OP_CODE_CUSTOMIZATION_UPDATE:
     {
       const outMessage = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
@@ -145,6 +152,15 @@ function onMessage(gameMessage) {
           session.sendReliableMessage(outMessage, playerId);
         }
       });
+	  
+		
+	  log.push(
+		{
+		  peerId: gameMessage.sender,
+		  customizationModel: gameMessage.payload
+		}
+	  )
+	  
       break;
     }
     default:
@@ -167,14 +183,30 @@ async function tickLoop() {
 
   // In Tick loop - see if all players have left early after a minimum period of time has passed
   // Call processEnding() to terminate the process and quit
-  if ((activePlayers === 0) && (elapsedTime > minimumElapsedTime)) {
+  if ((activePlayers === 0) && (elapsedTime > minimumElapsedTime)) 
+  {
     logger.info('All players disconnected. Ending game');
     const outcome = await session.processEnding();
     logger.info(`Completed process ending with: ${outcome}`);
     process.exit(0);
   }
+  
+  /*
+  if ((activePlayers === playerAllowed)) || elapsedTime > minimumElapsedTime))
+  {
+	logger.info('Signaling startGame to client')
+	const outMessage = session.newTextGameMessage(OP_CODE_PLAYERS_CONNECTED, session.getServerId(), 'Players Connected');
+	// eslint-disable-next-line no-unused-vars
+	session.getPlayers().forEach((player, playerId) => {
+		session.sendReliableMessage(outMessage, playerId);
+	});
+	logger.info('Starting Game');
+  }
+  */
+  
   // When the servers elapse time exceeds the game time, the session is terminated
-  if (elapsedTime > timeTillTerminate) {
+  if (elapsedTime > timeTillTerminate) 
+  {
     logger.info('Terminating game after certain time has passed');
     const outcome = await session.processEnding();
     logger.info(`Completed process ending with: ${outcome}`);
