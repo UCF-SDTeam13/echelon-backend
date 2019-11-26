@@ -1,16 +1,21 @@
+// Example Realtime Server Scri// Example override configuration
+const configuration = {
+  pingIntervalTime: 30000,
+};
+
 // Timing mechanism used to trigger end of game session.
 // Defines how long, in milliseconds, between each tick in the example tick loop
 const tickTime = 1000;
 
 // Defines how to long to wait in seconds before beginning
 // early termination check in the example tick loop
-const minimumElapsedTime = 30;
+const minimumElapsedTime = 90;
 let session; // The Realtime server session object
 let logger; // Log at appropriate level via .info(), .warn(), .error(), .debug()
 let startTime; // Records the time the process started
 let activePlayers = 0; // Records the number of connected players
-let timeTillTerminate = 0;
-let log = [];
+let timeTillTerminate = 3 * 60;
+const log = [];
 
 // Example custom op codes for user-defined messages
 // Any positive op code number can be defined here. These should match your client code.
@@ -80,12 +85,12 @@ function onPlayerAccepted(player) {
   // This player was accepted -- let's send them a message
   const msg = session.newTextGameMessage(OP_CODE_PLAYER_ACCEPTED, player.peerId,
     `Player ${player.peerId} accepted`);
-	
-  log.forEach(element => {
-	let customizationLog = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
-	  element.peerId, element.customizationModel);
-	session.sendReliableMessage(customizationLog, player.peerId);
-	});
+
+  log.forEach((element) => {
+    const customizationLog = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
+      element.peerId, element.customizationModel);
+    session.sendReliableMessage(customizationLog, player.peerId);
+  });
 
   session.sendReliableMessage(msg, player.peerId);
   activePlayers += 1;
@@ -99,8 +104,8 @@ function onPlayerDisconnect(peerId) {
 
   // send a message to each remaining player letting them know about the disconnect
   const outMessage = session.newTextGameMessage(OP_CODE_PLAYER_DISCONNECTED,
-	peerId,`Player ${peerId} disconnected`);
-	
+    peerId, `Player ${peerId} disconnected`);
+
   session.getPlayers().forEach((player, playerId) => {
     if (playerId !== peerId) {
       session.sendReliableMessage(outMessage, playerId);
@@ -142,7 +147,7 @@ function onMessage(gameMessage) {
       });
       break;
     }
-	
+
     case OP_CODE_CUSTOMIZATION_UPDATE:
     {
       const outMessage = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
@@ -152,15 +157,15 @@ function onMessage(gameMessage) {
           session.sendReliableMessage(outMessage, playerId);
         }
       });
-	  
-		
-	  log.push(
-		{
-		  peerId: gameMessage.sender,
-		  customizationModel: gameMessage.payload
-		}
-	  )
-	  
+
+
+      log.push(
+        {
+          peerId: gameMessage.sender,
+          customizationModel: gameMessage.payload,
+        },
+      );
+
       break;
     }
     default:
@@ -183,14 +188,13 @@ async function tickLoop() {
 
   // In Tick loop - see if all players have left early after a minimum period of time has passed
   // Call processEnding() to terminate the process and quit
-  if ((activePlayers === 0) && (elapsedTime > minimumElapsedTime)) 
-  {
+  if ((activePlayers === 0) && (elapsedTime > minimumElapsedTime)) {
     logger.info('All players disconnected. Ending game');
     const outcome = await session.processEnding();
     logger.info(`Completed process ending with: ${outcome}`);
     process.exit(0);
   }
-  
+
   /*
   if ((activePlayers === playerAllowed)) || elapsedTime > minimumElapsedTime))
   {
@@ -203,10 +207,9 @@ async function tickLoop() {
 	logger.info('Starting Game');
   }
   */
-  
+
   // When the servers elapse time exceeds the game time, the session is terminated
-  if (elapsedTime > timeTillTerminate) 
-  {
+  if (elapsedTime > timeTillTerminate) {
     logger.info('Terminating game after certain time has passed');
     const outcome = await session.processEnding();
     logger.info(`Completed process ending with: ${outcome}`);
@@ -228,6 +231,7 @@ function onStartGameSession(gameSession) {
 }
 
 exports.ssExports = {
+  configuration,
   init,
   onProcessStarted,
   onMessage,
