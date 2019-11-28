@@ -138,10 +138,12 @@ function onMessage(gameMessage) {
 
     case OP_CODE_STATS_UPDATE:
     {
+      logger.info(`OP_CODE_STATS_UPDATE, Sender:${gameMessage.sender}  Payload:${gameMessage.payload}`);
       const outMessage = session.newTextGameMessage(OP_CODE_STATS_UPDATE,
         gameMessage.sender, gameMessage.payload);
       session.getPlayers().forEach((player, playerId) => {
         if (playerId !== gameMessage.sender) {
+          logger.info(`Sending OP_CODE_STATS_UPDATE from Sender:${gameMessage.sender} to playerId`);
           session.sendReliableMessage(outMessage, playerId);
         }
       });
@@ -154,6 +156,7 @@ function onMessage(gameMessage) {
         gameMessage.sender, gameMessage.payload);
       session.getPlayers().forEach((player, playerId) => {
         if (playerId !== gameMessage.sender) {
+          logger.info(`Sending OP_CODE_CUSTOMIZATION_UPDATE from Sender:${gameMessage.sender} to playerId`);
           session.sendReliableMessage(outMessage, playerId);
         }
       });
@@ -169,7 +172,7 @@ function onMessage(gameMessage) {
       break;
     }
     default:
-      logger.info('OP CODE not found');
+      logger.info('OP_CODE not found');
       break;
   }
 }
