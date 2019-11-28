@@ -4,8 +4,8 @@
     "teams": [
         {
             "name": "Echelon",
-            "maxPlayers": 1,
-            "minPlayers": 1
+            "maxPlayers": 2,
+            "minPlayers": 2
         }
     ],
     "rules": [
