@@ -142,10 +142,10 @@ function onMessage(gameMessage) {
       const outMessage = session.newTextGameMessage(OP_CODE_STATS_UPDATE,
         gameMessage.sender, gameMessage.payload);
       session.getPlayers().forEach((player, playerId) => {
-        if (playerId !== gameMessage.sender) {
-          logger.info(`Sending OP_CODE_STATS_UPDATE from Sender:${gameMessage.sender} to playerId`);
-          session.sendReliableMessage(outMessage, playerId);
-        }
+        // if (playerId !== gameMessage.sender) {
+        logger.info(`Sending OP_CODE_STATS_UPDATE from Sender:${gameMessage.sender} to playerId`);
+        session.sendReliableMessage(outMessage, playerId);
+        // }
       });
       break;
     }
@@ -155,10 +155,10 @@ function onMessage(gameMessage) {
       const outMessage = session.newTextGameMessage(OP_CODE_CUSTOMIZATION_UPDATE,
         gameMessage.sender, gameMessage.payload);
       session.getPlayers().forEach((player, playerId) => {
-        if (playerId !== gameMessage.sender) {
-          logger.info(`Sending OP_CODE_CUSTOMIZATION_UPDATE from Sender:${gameMessage.sender} to playerId`);
-          session.sendReliableMessage(outMessage, playerId);
-        }
+        // if (playerId !== gameMessage.sender) {
+        logger.info(`Sending OP_CODE_CUSTOMIZATION_UPDATE from Sender:${gameMessage.sender} to playerId`);
+        session.sendReliableMessage(outMessage, playerId);
+        // }
       });
 
 
