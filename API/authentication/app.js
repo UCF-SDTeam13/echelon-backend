@@ -102,15 +102,17 @@ async function createUser(username, password, email, dbconnection) {
  * @returns {Object} object - API Gateway Lambda Proxy Output Format
  *
  */
+const dbPool = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_DB,
+});
+
 exports.lambdaHandler = async (event, context) => {
   // Set database connection parameters, pulling credentials from env
-  const dbconnection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_DB,
-  });
+
   // Connect to database
   /*
   dbconnection.connect((err) => {
@@ -119,6 +121,7 @@ exports.lambdaHandler = async (event, context) => {
     }
   });
   */
+  const dbconnection = await (await dbPool).getConnection();
   try {
     // Log Event
     console.log(event);
@@ -196,7 +199,9 @@ exports.lambdaHandler = async (event, context) => {
     }
   } catch (err) {
     console.log(err);
+    dbconnection.release();
     return err;
   }
+  dbconnection.release();
   return response;
 };
